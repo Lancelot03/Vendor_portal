@@ -23,7 +23,8 @@ function appendMessage(role, text) {
   const fragment = messageTpl.content.cloneNode(true);
   const root = fragment.querySelector('.message');
   root.classList.add(role);
-  fragment.querySelector('.meta').textContent = role === 'user' ? 'You' : 'Vendor Bot';
+  fragment.querySelector('.meta').textContent =
+    role === 'user' ? 'You' : 'Vendor Bot';
   fragment.querySelector('.content').textContent = text;
   logEl.appendChild(fragment);
   logEl.scrollTop = logEl.scrollHeight;
@@ -45,21 +46,13 @@ function formatVendorCard(vendor) {
   ].join('\n');
 }
 
-function buildErrorMessage(data, fallback) {
-  if (!data) {
-    return fallback;
-  }
-
-  return data.error || data.details || data.message || data?.diagnostics?.message || fallback;
-}
-
 async function fetchVendorById(vendorId) {
   const response = await fetch(`/api/vendors/${encodeURIComponent(vendorId)}`);
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(buildErrorMessage(data, 'Vendor fetch failed'));
+    throw new Error(data.error || 'Vendor fetch failed');
   }
-  return data;
+  return data.vendor;
 }
 
 async function createVendor(payload) {
@@ -71,29 +64,22 @@ async function createVendor(payload) {
 
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(buildErrorMessage(data, 'Vendor creation failed'));
+    throw new Error(data.error || 'Vendor creation failed');
   }
 
-  return data;
+  return data.vendor;
 }
 
 function startCreateFlow() {
   createFlow.active = true;
   createFlow.currentIndex = 0;
   createFlow.payload = {};
-  appendMessage('bot', "Okay, let's collect details. What is the Vendor Name?");
-}
-
-function sanitizeCreateField(key, value) {
-  if (key === 'Status') {
-    return value.toUpperCase();
-  }
-  return value;
+  appendMessage('bot', 'Okay, let\'s collect details. What is the Vendor Name?');
 }
 
 async function handleCreateFlowAnswer(answer) {
   const question = createFlow.questions[createFlow.currentIndex];
-  createFlow.payload[question.key] = sanitizeCreateField(question.key, answer);
+  createFlow.payload[question.key] = answer;
   createFlow.currentIndex += 1;
 
   if (createFlow.currentIndex >= createFlow.questions.length) {
@@ -103,12 +89,8 @@ async function handleCreateFlowAnswer(answer) {
     );
 
     try {
-      const result = await createVendor(createFlow.payload);
-      const mode = result?.source?.mode === 'mock-fallback' ? ' (Mock Fallback)' : '';
-      appendMessage('bot', `Success${mode}.\n${formatVendorCard(result.vendor)}`);
-      if (result?.diagnostics?.warning) {
-        appendMessage('bot', `${result.diagnostics.warning}\n${result.diagnostics.hint || ''}`);
-      }
+      const created = await createVendor(createFlow.payload);
+      appendMessage('bot', `Success. New Vendor Created.\n${formatVendorCard(created)}`);
     } catch (error) {
       appendMessage('bot', `Creation failed: ${error.message}`);
     } finally {
@@ -148,12 +130,8 @@ async function handleUserMessage(message) {
       `Calling /sap/opu/odata/sap/ZVENDOR_ODATA_SRV/VendorSet('${normalized}') ...`
     );
     try {
-      const result = await fetchVendorById(normalized);
-      const mode = result?.source?.mode === 'mock-fallback' ? ' (Mock Fallback)' : '';
-      appendMessage('bot', `${formatVendorCard(result.vendor)}${mode}`);
-      if (result?.diagnostics?.warning) {
-        appendMessage('bot', `${result.diagnostics.warning}\n${result.diagnostics.hint || ''}`);
-      }
+      const vendor = await fetchVendorById(normalized);
+      appendMessage('bot', formatVendorCard(vendor));
     } catch (error) {
       appendMessage('bot', `Query failed: ${error.message}`);
     }
