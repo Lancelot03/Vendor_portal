@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vendor Portal</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="layout">
+      <section class="panel architecture">
+        <h1>Vendor Portal</h1>
+        <p class="subtitle">SAP-Integrated OData Vendor Chat Portal</p>
+
+        <div class="card">
+          <h2>Dedicated OData Consume Point</h2>
+          <code>/sap/opu/odata/sap/ZVENDOR_ODATA_SRV/VendorSet</code>
+        </div>
+
+        <div class="card">
+          <h2>Key Field Mapping</h2>
+          <ul>
+            <li>LIFNR (Vendor ID) → VendorId</li>
+            <li>SMTPADR (Email) → Email</li>
+            <li>NAME1 (Name) → VendorName</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h2>Architecture</h2>
+          <ol>
+            <li>Portal UI (chat on web/tablet)</li>
+            <li>Integration Layer (API Gateway/BTP)</li>
+            <li>SAP Gateway (ZVENDOR_ODATA_SRV)</li>
+            <li>SEGW Entity + ZVENDOR_TABLE mappings</li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="panel chat">
+        <header>
+          <h2>Vendor Chatbot</h2>
+          <p>Type a vendor number (e.g., <strong>1</strong>) or “create new vendor”.</p>
+        </header>
+
+        <div id="chat-log" class="chat-log" aria-live="polite"></div>
+
+        <form id="chat-form" class="chat-form">
+          <input
+            id="chat-input"
+            name="message"
+            type="text"
+            placeholder="Enter vendor id or command"
+            autocomplete="off"
+            required
+          />
+          <button type="submit">Send</button>
+        </form>
+      </section>
+    </main>
+
+    <template id="message-template">
+      <div class="message">
+        <div class="meta"></div>
+        <pre class="content"></pre>
+      </div>
+    </template>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
